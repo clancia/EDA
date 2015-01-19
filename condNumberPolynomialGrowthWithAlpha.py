@@ -47,7 +47,7 @@ plt.plot(alphas[1:], yfit, 'g:', label='e^[%.3f*log(alpha) + %.2f]' % (slope, in
 plt.title('EDA linear system for Pnl')
 plt.xlabel('Log of truncation (log alpha_max)')
 plt.xscale('log')
-plt.ylabel('Log of conditioning number')
+plt.ylabel('Log of condition number')
 plt.yscale('log')
 plt.grid(True)
 plt.legend(loc='center right')

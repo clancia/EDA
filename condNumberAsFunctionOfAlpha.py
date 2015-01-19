@@ -38,7 +38,6 @@ for i, r, q in zip(range(3), rho, qqq):
 	for j in range(len(alphas)):
 		A = computeMatrix(alphas[j], r, q)
 		condNo[i,j] = np.linalg.cond(A, 1)
-	print 'Completata %da coppia' % (i+1)
 
 plt.figure()
 for i, l, c, r, q in zip(range(3), linestyles, col, rho, qqq):
@@ -53,7 +52,7 @@ plt.title('EDA linear system for Pnl')
 plt.xlabel('Truncation (alpha_max)')
 #plt.xlabel('Log of truncation (log alpha_max)')
 #plt.xscale('log')
-plt.ylabel('Log of conditioning number')
+plt.ylabel('Log of condition number')
 plt.yscale('log')
 plt.grid(True)
 plt.legend(loc='center right')

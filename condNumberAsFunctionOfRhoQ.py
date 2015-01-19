@@ -51,7 +51,7 @@ plt.contourf(r + dr / 2., q + dq / 2., z, levels=levels, cmap=cmap)
 plt.colorbar()
 plt.xlabel('rho')
 plt.ylabel('q')
-plt.title('Conditioning number (alpha_max = %d)' % (ALPHA))
+plt.title('Condition number (alpha_max = %d)' % (ALPHA))
 
 
 plt.show()
