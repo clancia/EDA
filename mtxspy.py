@@ -22,11 +22,11 @@
 #  
 #  
 
-# import numpy as np
+import numpy as np
 import matplotlib.pyplot as plt
 from Pnl import computeMatrix
 
-ALPHA = 10
+ALPHA = 5
 rho = .5
 q = .5
 
@@ -35,5 +35,8 @@ A = computeMatrix(ALPHA, rho, q)
 plt.figure()
 # cmap = mcolors.ListedColormap(['c','r'])
 plt.spy(A, cmap=plt.get_cmap('YlOrRd'), alpha=0.9)
-plt.title('Non-zero entries of the matrix A (alpha_max = 10)')
+plt.title('Non-zero entries of the matrix A (alpha_max = %d)' % (ALPHA))
+plt.xticks(np.arange(A.shape[0]) )
+plt.yticks(np.arange(A.shape[0]) ) 
+plt.grid(True)
 plt.show()
