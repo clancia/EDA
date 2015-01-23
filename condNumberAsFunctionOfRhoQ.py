@@ -31,18 +31,19 @@ ALPHA = 100
 mtxComputer = systemFactory(ALPHA)
 
 dr, dq = 0.05, 0.05
+steps = [0, 0.0005, 0.005] + [0.05 + i*0.05 for i in range(19)]
 
-q, r = np.mgrid[slice(0.05, 1, dq),
-                slice(0.05, 1, dr)]
+q, r = np.meshgrid(np.array(steps), np.array(steps))
 z = np.empty(r.size).reshape(r.shape)
 
 
 for i in range(r.shape[0]):
 	for j in range(r.shape[1]):
-		print 'Using rho =', r[i,j], 'and q =', q[i,j]
+		#print 'Using rho =', r[i,j], 'and q =', q[i,j]
 		z[i,j] = np.linalg.cond(mtxComputer(r[i,j], q[i,j]),1)
 
-cmap = plt.get_cmap('PiYG')
+#cmap = plt.get_cmap('PiYG')
+cmap = plt.get_cmap('RdYlGn')
 levels = MaxNLocator(nbins=25).tick_values(z.min(), z.max())
 
 plt.figure()
@@ -54,5 +55,8 @@ plt.ylabel('q')
 plt.title('Condition number (alpha_max = %d)' % (ALPHA))
 
 
-plt.show()
+#plt.show()
+plt.savefig('nuovafiguragay.png')
+plt.savefig('/home/clancia/Dropbox/EDA/nuovafiguragay.png')
+print 'Completed.'
 
