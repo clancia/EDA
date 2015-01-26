@@ -23,37 +23,56 @@
 #  
 
 import numpy as np
+import itertools
 from Pnl import computeMatrix, binomial
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 
-rho = [.95, .95, .95]
-qqq = [.05, .5, .95]
-col = ['r', 'g', 'b']
-linestyles = ['-', '--', ':']
-alphas = np.arange(0, 101, 10)
+N = 7
+R = .95
+rho = np.tile([R], N)
+qqq = np.linspace(.0, .95, N)
+colors = itertools.cycle(('r', 'g', 'b', 'c')) 
+markers = itertools.cycle('ov8^*h<Dxp>sH+d')
+alphas = np.arange(10, 101, 5)
 
-condNo = np.empty((3, len(alphas)))
+condNo = np.empty((N, len(alphas)))
 
-for i, r, q in zip(range(3), rho, qqq):
+for i, r, q in zip(range(N), rho, qqq):
 	for j in range(len(alphas)):
 		A = computeMatrix(alphas[j], r, q)
 		condNo[i,j] = np.linalg.cond(A, 1)
 
-plt.figure()
-for i, l, c, r, q in zip(range(3), linestyles, col, rho, qqq):
-	plt.plot(alphas, condNo[i, :], l, color=c, label='rho=%.2f, q=%.2f' % (r, q))
+### SemiLog-y Figure ###
 
-#xd,yd = np.log(alphas[1:]), np.log(condNo[0, 1:])
-#slope, intercept = np.polyfit(xd, yd, 1)
-#yfit = np.e**( slope*xd + intercept )
-#plt.plot(alphas[1:], yfit, 'k:', label='e^[%.3f*log(alpha) + %.2f]' % (slope, intercept))
+plt.figure()
+for i, m, c, q in zip(range(N), markers, colors, qqq):
+	plt.plot(alphas, condNo[i, :], linestyle='', marker=m, color=c, markersize=10, label='q=%.2f' % (q))
 
 plt.title('EDA linear system for Pnl')
 plt.xlabel('Truncation (alpha_max)')
-#plt.xlabel('Log of truncation (log alpha_max)')
-#plt.xscale('log')
-plt.ylabel('Log of condition number')
+plt.ylabel('Condition number')
 plt.yscale('log')
 plt.grid(True)
 plt.legend(loc='center right')
-plt.show()
+plt.savefig('CondNo.semilogy.alpha100.png')
+
+### Log-Log Figure ###
+
+plt.figure()
+for i, m, c, q in zip(range(N), markers, colors, qqq):
+	plt.plot(alphas, condNo[i, :], linestyle='', marker=m, color=c, markersize=10, label='q=%.2f' % (q))
+
+xd,yd = np.log(alphas[1:]), np.log(condNo[0, 1:])
+slope, intercept = np.polyfit(xd, yd, 1)
+yfit = np.e**( slope*xd + intercept )
+plt.plot(alphas[1:], yfit, 'k:', label='e^[%.3f*log(alpha) + %.2f]' % (slope, intercept))
+
+plt.title('EDA linear system for Pnl')
+plt.xlabel('Truncation (alpha_max)')
+plt.xscale('log')
+plt.ylabel('Condition number')
+plt.yscale('log')
+plt.grid(True)
+plt.legend(loc='center right')
+plt.savefig('CondNo.loglog.alpha100.png')
