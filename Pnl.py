@@ -124,9 +124,9 @@ def solveforPnl(trunc, rho, q):
 
         #########################################################
         # Only for debug purpouses
-        det = np.linalg.det(A)
-        if  det < 0.1**5:
-                print "WARNING :: Linear system almost singular :: det(A) = %f" % (det)
+        # det = np.linalg.det(A)
+        # if  det < 0.1**5:
+        #        print "WARNING :: Linear system almost singular :: det(A) = %f" % (det)
         #########################################################
         x = linalg.solve(A, b)
 
