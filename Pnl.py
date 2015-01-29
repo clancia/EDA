@@ -140,6 +140,49 @@ def solveforPnl(trunc, rho, q):
                 print "Little's Law is not satisfied :: P0 = %f and 1-rho = %f" % (P0, 1-rho)
         return JointP
 
+def single_step(position, rho, q):
+    if npr.random() < rho:
+        arrivals = npr.binomial(position[1]+1, 1.0-q)
+        toarrive = position[1] + 1 - arrivals
+    else:
+        if position[1] == 0:
+            arrivals = 0
+        else:
+            arrivals = npr.binomial(position[1], 1.0-q)
+        toarrive = position[1] - arrivals
+    newqueue = position[0] + arrivals
+    if position[0] != 0:
+        newqueue -= 1
+    return (newqueue, toarrive)
+
+def distances(series1, series2):
+        s1 = series1.shape
+        s2 = series2.shape
+        maxshape = (max(s1[0], s1[0]), max(s1[1], s2[1]))
+        landa = np.zeros(maxshape)
+        mu = np.zeros(maxshape)
+        landa[:s1[0], :s1[1]] = np.absolute(series1)
+        mu[:s2[0], :s2[1]] = np.absolute(series2)
+        return (0.5 * np.linalg.norm(landa - mu, 1),
+                np.linalg.norm(np.sqrt(landa) - np.sqrt(mu)) / np.sqrt(2))
+
+def simulforPnl(rho, q, tmax):
+        maxsize = 0
+        freqcounter = {}
+        position = (0,0)
+        #trajectory = np.empty((tmax,2), dtype=np.int8)
+        for i in xrange(1,tmax+1):
+            position = single_step(position, rho, q)
+            f = freqcounter.setdefault(position, 0)
+            freqcounter[position] = f+1
+            if max(position) > maxsize:
+                maxsize = max(position)
+                #trajectory[i][0], trajectory[i][1] = position
+        jointP = np.zeros((maxsize+1, maxsize+1), dtype=np.float64)
+        for (k,v) in freqcounter.iteritems():
+            jointP[k[0]][k[1]] = float(v)/tmax
+        return jointP
+
 # def plot_as_imgs(series1, series2, rho, q):
 #         fig = plt.figure()
 
@@ -178,47 +221,6 @@ def solveforPnl(trunc, rho, q):
 
 #         logger.info("Joint measure comparison plotted and saved to file.")
 
-# def single_step(position, rho, q):
-#     if npr.random() < rho:
-#         logger.debug('Customer is not deleted')
-#         arrivals = npr.binomial(position[1]+1, 1.0-q)
-#         toarrive = position[1] + 1 - arrivals
-#     else:
-#         logger.debug('Customer is deleted')
-#         if position[1] == 0:
-#             arrivals = 0
-#         else:
-#             arrivals = npr.binomial(position[1], 1.0-q)
-#         toarrive = position[1] - arrivals
-#     newqueue = position[0] + arrivals
-#     if position[0] != 0:
-#         newqueue -= 1
-#     logger.debug('Arrived %d, ToArrive %d, InQueue %d' % (arrivals, toarrive, newqueue))
-#     return (newqueue, toarrive)
-
-# def simulforPnl(rho, q, tmax):
-#         maxsize = 0
-#         freqcounter = {}
-#         logger.info('rho is %.2f, q is %.2f :: Starting the simulation...' % (rho, q))
-#         position = (0,0)
-#         #trajectory = np.empty((tmax,2), dtype=np.int8)
-#         for i in xrange(1,tmax+1):
-#             position = single_step(position, rho, q)
-#             logger.debug('At iteration %d the queue is %d' % (i+1, position[0]))
-#             f = freqcounter.setdefault(position, 0)
-#             freqcounter[position] = f+1
-#             if not i%1000:
-#                 logger.info("Iteration no. %d" % (i))
-#             if max(position) > maxsize:
-#                 maxsize = max(position)
-#                 #trajectory[i][0], trajectory[i][1] = position
-#         jointP = np.zeros((maxsize+1, maxsize+1), dtype=np.float64)
-#         for (k,v) in freqcounter.iteritems():
-#             jointP[k[0]][k[1]] = float(v)/tmax
-#         P0 = sum(jointP[0])
-#         if abs(P0 - 1+rho)/(1-rho) > 10**(-6):
-#             logger.warning("Simulated P_0 is larger than %f by %f" % (1-rho, abs(1-rho - P0)))
-#             return jointP
 
 # def comparemarginals(series1, series2, rho, q):
 #         s1 = series1.shape
@@ -268,25 +270,6 @@ def solveforPnl(trunc, rho, q):
 #         plt.savefig(figname)
 
 #         logger.info("Marginal measures comparison plotted and saved to file.")
-        
-# def hell(x, y):
-#     return (sqrt(x)-sqrt(y))**2
-
-# def fooabs(x, y):
-#     return abs(x - y)
-
-# def distances(series1, series2):
-#         s1 = series1.shape
-#         s2 = series2.shape
-#         maxshape = (max(s1[0], s1[0]), max(s1[1], s2[1]))
-#         landa = np.zeros(maxshape)
-#         mu = np.zeros(maxshape)
-#         landa[:s1[0], :s1[1]] = series1[:,:]
-#         mu[:s2[0], :s2[1]] = series2[:,:]
-#         landa = landa.flatten()
-#         mu = mu.flatten()
-#         return (0.5 * sum(map(fooabs, landa, mu)),
-#                 1/sqrt(2) * sqrt(sum(map(hell, landa, mu))))
 
 # def main():
 #         args = parser.parse_args()

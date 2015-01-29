@@ -33,6 +33,9 @@ parser = argparse.ArgumentParser(description='Approximate Solver of Pnl Balance 
 parser.add_argument('--rho', default=.95, type=float)
 parser.add_argument('--q', default=.95, type=float)
 parser.add_argument('--amax', default=50, type=int)
+parser.add_argument('--cond', action='store_true')
+parser.add_argument('--simul', action='store_true')
+parser.add_argument('--tmax', default=10000, type=int)
 
 args = parser.parse_args()
 
@@ -45,7 +48,8 @@ print 'Generating the system of linear equations...',
 A = computeMatrix(args.amax, args.rho, args.q)
 print 'done.'
 
-print 'The norm-1 condition number of the matrix is', np.linalg.cond(A,1), '\n'
+if args.cond:
+	print 'The norm-1 condition number of the matrix is', np.linalg.cond(A,1), '\n'
 
 b = np.zeros(A.shape[0], dtype=prec)
 b[-1] = 1.
@@ -75,6 +79,17 @@ for i in range(len(x)):
 print 'The sum of the vector P0l is', sum(JointP[0]), 'and should be', 1.-args.rho, '\n'
 
 print 'The approximate Pnl have been written to output file', ofilename
+
+if args.simul:
+	print 'Simulating the EDA/D/1 queue...'
+	simulJointP = simulforPnl(args.rho, args.q, args.tmax)
+	dtv, dhell = distances(JointP, simulJointP)
+	print 'The EDA/D/1 queue has been simulated for %d steps' % (args.tmax)
+	print '-'*30
+	print 'Distance between simulated and approximated Pnl:'
+	print 'Total Variation :: %.8f' % (dtv)
+	print 'Hellinger :: %.8f' % (dhell)
+
 print 'Completed.'
 
 
