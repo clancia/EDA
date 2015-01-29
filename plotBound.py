@@ -28,22 +28,20 @@ import matplotlib.pyplot as plt
 
 mp.dps = 25
 mp.pretty = True
-ALPHA = 40
+ALPHA = 100
 
-qq = np.linspace(0.5, 0.95, 45)
+qq = np.linspace(0.90, 0.99, 100)
 
 numerator = np.array(map(qp, -qq), dtype=np.float128)
 denominator = np.array(map(qp, qq), dtype=np.float128)
 asympt = np.array(map(lambda q: q**(.5*ALPHA*(ALPHA-1)), qq), dtype=np.float128)
 
-values = np.exp(np.log(numerator) + np.log(asympt) - np.log(denominator))
-
 plt.figure()
-plt.plot(qq, values, color='r', marker='h')
+plt.plot(qq, ALPHA*numerator/denominator*asympt, color='r', marker='h')
 plt.xlabel('Value of q')
 plt.ylabel('(-q;q)_\infty / (q;q)_\infty * q^{alpha \choose 2}')
 plt.yscale('log')
-plt.title('A priori error on Pnl as a function of q (alpha_max = 25)')
+plt.title('A priori error on Pnl as a function of q (alpha_max = %d)' % ALPHA)
 plt.grid(True)
 plt.show()
 

@@ -26,6 +26,18 @@ from mpmath import *
 from Pnl import *
 import numpy as np
 import argparse
+import sys
+
+class Unbuffered(object):
+   def __init__(self, stream):
+       self.stream = stream
+   def write(self, data):
+       self.stream.write(data)
+       self.stream.flush()
+   def __getattr__(self, attr):
+       return getattr(self.stream, attr)
+
+sys.stdout = Unbuffered(sys.stdout)
 
 prec = np.float64
  
@@ -76,7 +88,7 @@ for i in range(len(x)):
     n,l = indextonl(i)
     JointP[n,l] = x[i]
     ofile.write('P[%3d][%3d] :: %.12f\n' % (n, l, x[i]))
-print 'The sum of the vector P0l is', sum(JointP[0]), 'and should be', 1.-args.rho, '\n'
+print 'The sum of the vector P0l is %.6f and should be %.3f\n' % (sum(JointP[0]),  1.-args.rho)
 
 print 'The approximate Pnl have been written to output file', ofilename
 
