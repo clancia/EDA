@@ -28,11 +28,11 @@ from Pnl import computeMatrix, binomial
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-N = 7
+N = 4
 R = .95
 rho = np.tile([R], N)
 qqq = np.linspace(.0, .95, N)
-colors = itertools.cycle(('r', 'g', 'b', 'c')) 
+colors = itertools.cycle(('c', 'y', 'm', 'k')) 
 markers = itertools.cycle('ov8^*h<Dxp>sH+d')
 alphas = np.arange(10, 101, 5)
 
@@ -54,7 +54,7 @@ plt.xlabel('Truncation (alpha_max)')
 plt.ylabel('Condition number')
 plt.yscale('log')
 plt.grid(True)
-plt.legend(loc='center right')
+plt.legend(loc='lower right')
 plt.savefig('CondNo.semilogy.alpha100.png')
 
 ### Log-Log Figure ###
@@ -63,16 +63,16 @@ plt.figure()
 for i, m, c, q in zip(range(N), markers, colors, qqq):
 	plt.plot(alphas, condNo[i, :], linestyle='', marker=m, color=c, markersize=10, label='q=%.2f' % (q))
 
-xd,yd = np.log(alphas[1:]), np.log(condNo[0, 1:])
+xd,yd = np.log(alphas), np.log(condNo[0, :])
 slope, intercept = np.polyfit(xd, yd, 1)
 yfit = np.e**( slope*xd + intercept )
-plt.plot(alphas[1:], yfit, 'k:', label='e^[%.3f*log(alpha) + %.2f]' % (slope, intercept))
+plt.plot(alphas, yfit, 'k:', label='e^[%.2f*log(alpha) + %.2f]' % (slope, intercept))
 
-plt.title('EDA linear system for Pnl')
+#plt.title('EDA linear system for Pnl')
 plt.xlabel('Truncation (alpha_max)')
 plt.xscale('log')
 plt.ylabel('Condition number')
 plt.yscale('log')
-plt.grid(True)
-plt.legend(loc='center right')
+#plt.grid(True)
+plt.legend(loc='lower right')
 plt.savefig('CondNo.loglog.alpha100.png')

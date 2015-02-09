@@ -25,38 +25,45 @@
 import numpy as np
 from Pnl import systemFactory, binomial
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
+#from matplotlib.ticker import MaxNLocator
+from matplotlib import colors, ticker, cm
+from datetime import datetime
 
 ALPHA = 100
 mtxComputer = systemFactory(ALPHA)
 
-dr, dq = 0.05, 0.05
-steps = [0, 0.0005, 0.005] + [0.05 + i*0.05 for i in range(19)]
+dr, dq = 0.04125, 0.04125
+steps = np.linspace(0, 0.99, 25)
 
 q, r = np.meshgrid(np.array(steps), np.array(steps))
 z = np.empty(r.size).reshape(r.shape)
+
+ofile = open('/home/clancia/Dropbox/EDA/eda_alpha.log', 'w', 0)
+ofile.write('%s :: Computation has started\n' % (datetime.now()))
 
 
 for i in range(r.shape[0]):
 	for j in range(r.shape[1]):
 		#print 'Using rho =', r[i,j], 'and q =', q[i,j]
 		z[i,j] = np.linalg.cond(mtxComputer(r[i,j], q[i,j]),1)
+		ofile.write('%s :: Completed rho=%.5f, q=%.5f\n' % (datetime.now(), r[i,j], q[i,j]))
 
-#cmap = plt.get_cmap('PiYG')
-cmap = plt.get_cmap('RdYlGn')
-levels = MaxNLocator(nbins=25).tick_values(z.min(), z.max())
+#levels = MaxNLocator(nbins=25).tick_values(z.min(), z.max())
+z = np.ma.masked_where(z<= 0, z)
 
-plt.figure()
-
-plt.contourf(r + dr / 2., q + dq / 2., z, levels=levels, cmap=cmap)
-plt.colorbar()
+#plt.contourf(r + dr / 2., q + dq / 2., z, locator=ticker.LogLocator(), cmap=cm.Greys_r)
+levs = np.logspace(np.floor(np.log10(z.min())),
+                       np.ceil(np.log10(z.max())), 20)
+lev_exp = np.log10(levs)
+plt.contourf(r + dr / 2., q + dq / 2., z, levs, norm=colors.LogNorm(), cmap=cm.Greys_r)
+cbar = plt.colorbar(ticks=levs)
+cbar.ax.set_yticklabels(['%.2f' % (l) for l in lev_exp])
 plt.xlabel('rho')
 plt.ylabel('q')
-plt.title('Condition number (alpha_max = %d)' % (ALPHA))
-
+plt.title('Log10 of condition number (alpha_max = %d)' % (ALPHA))
 
 #plt.show()
-plt.savefig('nuovafiguragay.png')
-plt.savefig('/home/clancia/Dropbox/EDA/nuovafiguragay.png')
-print 'Completed.'
+plt.savefig('CondNo.alpha.100.png')
+plt.savefig('/home/clancia/Dropbox/EDA/CondNo.alpha.100.png')
+ofile.write('%s :: Computation completed\n' % (datetime.now()))
 
