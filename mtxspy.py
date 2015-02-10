@@ -24,9 +24,9 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from Pnl import computeMatrix
+from pnl import computeMatrix
 
-ALPHA = 5
+ALPHA = 10
 rho = .5
 q = .5
 

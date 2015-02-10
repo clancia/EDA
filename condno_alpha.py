@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#  condNumberAlpha.py
+#  condno_alpha.py
 #  
 #  Copyright 2014 Carlo Lancia <clancia@g6-laptop>
 #  
@@ -24,7 +24,7 @@
 
 import numpy as np
 import itertools
-from Pnl import computeMatrix, binomial
+from pnl import computeMatrix
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
@@ -33,14 +33,14 @@ R = .95
 rho = np.tile([R], N)
 qqq = np.linspace(.0, .95, N)
 colors = itertools.cycle(('c', 'y', 'm', 'k')) 
-markers = itertools.cycle('ov8^*h<Dxp>sH+d')
+markers = itertools.cycle('<h>*')
 alphas = np.arange(10, 101, 5)
 
 condNo = np.empty((N, len(alphas)))
 
 for i, r, q in zip(range(N), rho, qqq):
 	for j in range(len(alphas)):
-		A = computeMatrix(alphas[j], r, q)
+		A = Pnl.computeMatrix(alphas[j], r, q)
 		condNo[i,j] = np.linalg.cond(A, 1)
 
 ### SemiLog-y Figure ###
@@ -55,7 +55,7 @@ plt.ylabel('Condition number')
 plt.yscale('log')
 plt.grid(True)
 plt.legend(loc='lower right')
-plt.savefig('CondNo.semilogy.alpha100.png')
+plt.savefig('./figures/CondNo.semilogy.alpha100.png')
 
 ### Log-Log Figure ###
 
@@ -75,4 +75,4 @@ plt.ylabel('Condition number')
 plt.yscale('log')
 #plt.grid(True)
 plt.legend(loc='lower right')
-plt.savefig('CondNo.loglog.alpha100.png')
+plt.savefig('./figures/CondNo.loglog.alpha100.png')

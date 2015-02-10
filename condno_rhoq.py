@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#  condNumberRhoQ.py
+#  condno_rhoq.py
 #  
 #  Copyright 2014 Carlo Lancia <clancia@g6-laptop>
 #  
@@ -23,7 +23,7 @@
 #  
 
 import numpy as np
-from Pnl import systemFactory, binomial
+from pnl import systemFactory, binomial
 import matplotlib.pyplot as plt
 #from matplotlib.ticker import MaxNLocator
 from matplotlib import colors, ticker, cm
@@ -38,7 +38,7 @@ steps = np.linspace(0, 0.99, 25)
 q, r = np.meshgrid(np.array(steps), np.array(steps))
 z = np.empty(r.size).reshape(r.shape)
 
-ofile = open('/home/clancia/Dropbox/EDA/eda_alpha.log', 'w', 0)
+ofile = open('./figures/eda.log', 'w', 0)
 ofile.write('%s :: Computation has started\n' % (datetime.now()))
 
 
@@ -48,10 +48,8 @@ for i in range(r.shape[0]):
 		z[i,j] = np.linalg.cond(mtxComputer(r[i,j], q[i,j]),1)
 		ofile.write('%s :: Completed rho=%.5f, q=%.5f\n' % (datetime.now(), r[i,j], q[i,j]))
 
-#levels = MaxNLocator(nbins=25).tick_values(z.min(), z.max())
 z = np.ma.masked_where(z<= 0, z)
 
-#plt.contourf(r + dr / 2., q + dq / 2., z, locator=ticker.LogLocator(), cmap=cm.Greys_r)
 levs = np.logspace(np.floor(np.log10(z.min())),
                        np.ceil(np.log10(z.max())), 20)
 lev_exp = np.log10(levs)
@@ -62,7 +60,6 @@ plt.xlabel('rho')
 plt.ylabel('q')
 plt.title('Log10 of condition number (alpha_max = %d)' % (ALPHA))
 
-#plt.show()
 plt.savefig('CondNo.alpha.100.png')
 plt.savefig('/home/clancia/Dropbox/EDA/CondNo.alpha.100.png')
 ofile.write('%s :: Computation completed\n' % (datetime.now()))

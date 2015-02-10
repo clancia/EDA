@@ -24,24 +24,27 @@
 
 from mpmath import *
 import numpy as np
-import matplotlib.pyplot as plt
 
-mp.dps = 25
+#mp.dps = 25
 mp.pretty = True
 ALPHA = 100
 
-qq = np.linspace(0.90, 0.99, 100)
+qq = np.linspace(0.9, 0.99, 10)
+qq_mpf = [mpf(str(q)) for q in qq]
+mqq_mpf = [mpf('-'+str(q)) for q in qq]
+exponent = mpf(str(eval('.5*ALPHA*(ALPHA+1)')))
 
-numerator = np.array(map(qp, -qq), dtype=np.float128)
-denominator = np.array(map(qp, qq), dtype=np.float128)
-asympt = np.array(map(lambda q: q**(.5*ALPHA*(ALPHA-1)), qq), dtype=np.float128)
+numerator = map(qp, mqq_mpf)
+denominator = map(qp, qq_mpf)
+asympt = [q**exponent for q in qq_mpf]
 
-plt.figure()
-plt.plot(qq, ALPHA*numerator/denominator*asympt, color='r', marker='h')
-plt.xlabel('Value of q')
-plt.ylabel('(-q;q)_\infty / (q;q)_\infty * q^{alpha \choose 2}')
-plt.yscale('log')
-plt.title('A priori error on Pnl as a function of q (alpha_max = %d)' % ALPHA)
-plt.grid(True)
-plt.show()
+yy = [2*ALPHA*a/b*c for (a,b,c) in zip(numerator, denominator, asympt)]
+
+for q, y in zip(qq_mpf, yy):
+	print q, y
+
+def bound(q):
+	return log(qp(-q)/qp(q)*q**(.5*ALPHA*(ALPHA+1)))
+
+plot(bound, xlim=[0,1], singularities=[0,1])
 

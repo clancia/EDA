@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#  Pnl.py
+#  pnl.py
 #  
 #  Copyright 2014 Carlo Lancia <clancia@g6-laptop>
 #  

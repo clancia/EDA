@@ -23,7 +23,7 @@
 #  
 
 from mpmath import *
-from Pnl import *
+from pnl import *
 import numpy as np
 import argparse
 import sys
@@ -81,7 +81,7 @@ print 'The a priori error on the solution is', aPrioriError, '\n'
 
 JointP = np.zeros((args.amax+1, args.amax+1), dtype=prec)
 ofilename = 'approx_Pnl_r%.2f_q%.2f.txt' % (args.rho, args.q)
-ofile = open(ofilename, 'w')
+ofile = open('./approximate_Pnl/' + ofilename, 'w')
 ofile.write('# Approximate solution of EDA/D/1 bivariate stationary measure\n')
 ofile.write('# P[n][l] = probability of having n customers in queue and l customers late\n\n')
 for i in range(len(x)):
