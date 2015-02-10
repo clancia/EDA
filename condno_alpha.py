@@ -34,7 +34,10 @@ rho = np.tile([R], N)
 qqq = np.linspace(.0, .95, N)
 colors = itertools.cycle(('c', 'y', 'm', 'k')) 
 markers = itertools.cycle('<h>*')
+##############################
+# ALPHA
 alphas = np.arange(10, 101, 5)
+##############################
 
 condNo = np.empty((N, len(alphas)))
 

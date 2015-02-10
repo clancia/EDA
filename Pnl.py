@@ -23,7 +23,7 @@
 #  
 
 import numpy as np
-import scipy as sp
+#import scipy as sp
 import numpy.random as npr
 #################################
 # import scipy.linalg as linalg

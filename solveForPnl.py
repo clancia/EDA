@@ -44,7 +44,10 @@ prec = np.float64
 parser = argparse.ArgumentParser(description='Approximate Solver of Pnl Balance Equations')
 parser.add_argument('--rho', default=.95, type=float)
 parser.add_argument('--q', default=.95, type=float)
+###################################################
+# ALPHA
 parser.add_argument('--amax', default=50, type=int)
+###################################################
 parser.add_argument('--cond', action='store_true')
 parser.add_argument('--simul', action='store_true')
 parser.add_argument('--tmax', default=10000, type=int)
