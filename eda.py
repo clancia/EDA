@@ -1,8 +1,28 @@
 import numpy as np
 import numpy.random as npr
 import scipy.linalg as linalg
+import scipy.sparse as sparse
 import scipy.stats as sps
 import logging
+from math import floor, ceil, log, sqrt
+
+logger = logging.getLogger('eda')
+logger.setLevel(logging.DEBUG)
+# create file handler which logs even debug messages
+fh = logging.FileHandler('eda.log')
+fh.setLevel(logging.DEBUG)
+# create console handler with a higher log level
+# ch = logging.StreamHandler()
+# ch.setLevel(logging.WARNING)
+# create formatter and add it to the handlers
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+# ch.setFormatter(formatter)
+# add the handlers to the logger
+logger.addHandler(fh)
+# logger.addHandler(ch)
+logger.debug('Set up')
 
 
 def isSquare(m):
@@ -23,7 +43,7 @@ def maxtriangno(k):
 
     maxtriangno is the inverse of kct
     """
-    return int(np.floor(.5 * (-1.0 + np.sqrt(1.0 + 8.0 * k))))
+    return int(floor(.5 * (-1.0 + sqrt(1.0 + 8.0 * k))))
 
 
 def indextonl(k):
@@ -44,33 +64,99 @@ def nltoindex(n, l):
         return int(kct(k) + l)
 
 
-def computeMatrix(trunc, rho, q, prec=np.float128):
+def optimal_trunc(rho, q, tol=10**-9, logger=logger):
+    opt = max(10, ceil((log(tol) - log(rho))/log(q)))
+    if opt > 100:
+        logger.warning('With rho %.2f & q %.2f, ' +
+                       'optimal truncation very high %d', rho, q, opt)
+    return opt
+
+
+def computeMatrix(trunc, rho, q, prec=np.float64, tol=10**-9, logger=logger):
         """
         Return the {trunc+2 \choose 2} x {trunc+2 \choose 2} matrix
         that corresponds to the NW truncation of the linear system for the Pnl
         """
         # p = 1.0 - q
+        opt = ceil((log(tol) - log(rho))/log(q))
+        if trunc < opt:
+            logger.warning('Sub-optimal truncation %d | should be %d',
+                           trunc, opt)
         sysdim = kct(trunc+1)
 
-        A = -1 * np.identity(sysdim, dtype=prec)
-        for hh in range(sysdim):
-                nn, ll = indextonl(hh)
-                for jj in range(nn + 1):
-                        kk = nltoindex(jj+1, ll+nn-jj)
-                        if kk < sysdim:
-                                A[hh, kk] += (1 - rho) *\
-                                             sps.binom.pmf(nn-jj, ll+nn-jj, q)
-                        kk = nltoindex(jj+1, nn+ll-jj-1)
-                        if nn+ll-jj > 0 and kk < sysdim:
-                                A[hh, kk] += rho *\
-                                             sps.binom.pmf(nn-jj, ll+nn-jj, q)
-                kk = nltoindex(0, ll+nn)
-                if kk < sysdim:
-                        A[hh, kk] += (1-rho) * sps.binom.pmf(nn, ll+nn, q)
-                kk = nltoindex(0, ll+nn-1)
-                if ll+nn > 0 and kk < sysdim:
-                        A[hh, kk] += rho * sps.binom.pmf(nn, ll+nn, q)
-        A[-1] = np.ones(sysdim, dtype=prec)
+        # A = -1 * np.identity(sysdim, dtype=prec)
+        logger.debug('Starting to compute transition matrix')
+        A = np.zeros((sysdim, sysdim), dtype=prec)
+        for nn in range(trunc+1):
+            for ll in range(trunc+1-nn):
+                hh = nltoindex(nn, ll)
+                if nn > 0:
+                    # if ll != trunc-nn:
+                    rv = sps.binom(ll+1, 1-q)
+                    ks = np.array(
+                        [nltoindex(nn+a-1, ll-a+1) for a in range(ll+2)])
+                    A[hh, ks] += rho * rv.pmf(np.arange(ll+2))
+                    rv = sps.binom(ll, 1-q)
+                    ks = np.array(
+                        [nltoindex(nn+a-1, ll-a) for a in range(ll+1)])
+                    A[hh, ks] += (1-rho) * rv.pmf(np.arange(ll+1))
+                else:
+                    if ll != trunc-nn:
+                        rv = sps.binom(ll+1, 1-q)
+                        ks = np.array(
+                            [nltoindex(a, ll-a+1) for a in range(ll+2)])
+                        A[hh, ks] += rho * rv.pmf(np.arange(ll+2))
+                    rv = sps.binom(ll, 1-q)
+                    ks = np.array(
+                        [nltoindex(a, ll-a) for a in range(ll+1)])
+                    A[hh, ks] += (1-rho) * rv.pmf(np.arange(ll+1))
+        # A[-1] = np.ones(sysdim, dtype=prec)
+        logger.debug('Matrix computed')
+        return A
+
+
+def computeMatrix_sp(trunc, rho, q,
+                     tol=10**-9, prec=np.float64, logger=logger):
+        """
+        Return the {trunc+2 \choose 2} x {trunc+2 \choose 2} matrix
+        that corresponds to the NW truncation of the linear system for the Pnl
+        """
+        # p = 1.0 - q
+        opt = ceil((log(tol) - log(rho))/log(q))
+        if trunc < opt:
+            logger.warning('Sub-optimal truncation %d | should be %d',
+                           trunc, opt)
+        sysdim = kct(trunc+1)
+
+        # A = -1 * np.identity(sysdim, dtype=prec)
+        logger.debug('Starting to compute sparse transition matrix')
+        A = sparse.dok_matrix((sysdim, sysdim), dtype=prec)
+        for nn in range(trunc+1):
+            for ll in range(trunc+1-nn):
+                hh = nltoindex(nn, ll)
+                if nn > 0:
+                    rv = sps.binom(ll+1, 1-q)
+                    ks = np.array(
+                        [nltoindex(nn+a-1, ll-a+1) for a in range(ll+2)])
+                    A[hh, ks] += rho * rv.pmf(np.arange(ll+2))
+                    rv = sps.binom(ll, 1-q)
+                    ks = np.array(
+                        [nltoindex(nn+a-1, ll-a) for a in range(ll+1)])
+                    A[hh, ks] += (1-rho) * rv.pmf(np.arange(ll+1))
+                else:
+                    if ll != trunc-nn:
+                        # this is to avoid to compute transitions
+                        # from (0, trunc) to outside
+                        rv = sps.binom(ll+1, 1-q)
+                        ks = np.array(
+                            [nltoindex(a, ll-a+1) for a in range(ll+2)])
+                        A[hh, ks] += rho * rv.pmf(np.arange(ll+2))
+                    rv = sps.binom(ll, 1-q)
+                    ks = np.array(
+                        [nltoindex(a, ll-a) for a in range(ll+1)])
+                    A[hh, ks] += (1-rho) * rv.pmf(np.arange(ll+1))
+        # A[-1] = np.ones(sysdim, dtype=prec)
+        logger.debug('Matrix computed')
         return A
 
 
@@ -173,28 +259,12 @@ class EdaD1Solver(object):
         """
         """
         self._alp = trunc
-        self.trmtrx = rq_truncated_system(trunc)
-        self.pnl = {}
-
-    @property
-    def rho(self):
-        return self._rho
-
-    @rho.setter
-    def rho(self, value):
-        if value <= 0 or value >= 1:
-            raise ValueError('rho must be between 0.0 and 1.0')
-        self._rho = value
-
-    @property
-    def qqq(self):
-        return self._qqq
-
-    @qqq.setter
-    def qqq(self, value):
-        if value < 0 or value >= 1:
-            raise ValueError('q must be between 0.0 and 1.0')
-        self._qqq = value
+        # self.rqmtrx = rq_truncated_system(trunc)
+        self._pnl = {}
+        self._AAA = {}
+        self.logger = logging.getLogger('eda.solver')
+        self.logger.info('Instance created')
+        self.rqmtrx = rq_truncated_system(trunc)
 
     @property
     def alp(self):
@@ -206,54 +276,112 @@ class EdaD1Solver(object):
             raise ValueError('truncation must be positive')
         self._alp = value
 
-    def set_pnl(self, rho, qqq):
+    def set_pnl(self, rho, qqq, pnl=None):
         if rho <= 0 or rho >= 1:
             raise ValueError('rho must be between 0.0 and 1.0')
         if qqq < 0 or qqq >= 1:
             raise ValueError('q must be between 0.0 and 1.0')
-        pnl = self.calc_pnl(rho, qqq)
-        self.pnl[(rho, qqq)] = pnl
+        if pnl is None:
+            pnl, r, q = self.calc_pnl(rho, qqq)
+        else:
+            if not (isSquare(pnl) and type(pnl) is np.ndarray):
+                raise ValueError('pnl must be a square 2-D array')
+        self._pnl[(rho, qqq)] = pnl
 
     def get_pnl(self, rho, qqq):
-        return self.pnl.get((rho, qqq))
+        return self._pnl.get((rho, qqq))
 
     def calc_pnl(self, rho, qqq, loglevel='INFO'):
-        curlev = logging.getLogger().getEffectiveLevel()
-        logging.getLogger().setLevel(loglevel)
+        curlev = self.logger.getEffectiveLevel()
+        self.logger.setLevel(loglevel)
         if rho <= 0 or rho >= 1:
             raise ValueError('rho must be between 0.0 and 1.0')
         if qqq < 0 or qqq >= 1:
             raise ValueError('q must be between 0.0 and 1.0')
         A = self.get_mtrx(rho, qqq)
+        if A is None:
+            self.set_mtrx(rho, qqq)
+            A = self.get_mtrx(rho, qqq)
         pnl = solveforPnl(A)
         if (pnl < 0).any():
-            logging.warning('Pnl has negative elements (biggest abs val %.5e)',
-                            np.abs(pnl[pnl < 0]).max())
+            self.logger.warning('Pnl has negative elements (biggest abs val ' +
+                                '%.5e)', np.abs(pnl[pnl < 0]).max())
         p0 = sum(pnl[0])
         if abs(p0 - 1 + rho)/(1-rho) > 0.1**8:
-            logging.warning("Check on p0 failed :: %.4f | %.5e", 1-rho, p0)
+            self.logger.warning("Check on p0 failed :: %.4f | %.5e", 1-rho, p0)
         else:
-            logging.info('Probability of empty queue :: %.4f', p0)
-        logging.getLogger().setLevel(curlev)
-        return pnl
+            self.logger.info('Probability of empty queue :: %.4f', p0)
+        self.logger.setLevel(curlev)
+        return pnl, rho, qqq
+
+    def dump_pnl(self, path, rho, q):
+        """
+        Dump a matrix with approximate stationary distribution
+        """
+        pnl = self._pnl.get((rho, q))
+        if pnl is None:
+            self.logger.error('The matrix is not computed yet, cannot dump')
+        else:
+            pnl.dump(path)
+
+    def load_pnl(self, path, rho, q):
+        """
+        Load a matrix with approximate stationary distribution
+        """
+        # check if path exists
+        try:
+            loaded = np.load(path)
+        except FileNotFoundError:
+            print('The file path does not exist')
+        else:
+            self._pnl[(rho, q)] = loaded
+
+    def set_mtrx(self, rho, qqq, A=None):
+        if rho <= 0 or rho >= 1:
+            raise ValueError('rho must be between 0.0 and 1.0')
+        if qqq < 0 or qqq >= 1:
+            raise ValueError('q must be between 0.0 and 1.0')
+        if A is None:
+            A = self.calc_mtrx(rho, qqq)
+        else:
+            if not (isSquare(A) and type(A) is np.ndarray):
+                raise ValueError('A must be a square 2-D array')
+        self._AAA[(rho, qqq)] = A
 
     def get_mtrx(self, rho, qqq):
-        A = self.trmtrx(rho, qqq)
+        return self._AAA.get((rho, qqq))
+
+    def calc_mtrx(self, rho, qqq, loglevel='INFO'):
+        curlev = self.logger.getEffectiveLevel()
+        self.logger.setLevel(loglevel)
+        A, r, q = self.rqmtrx(rho, qqq)
         det = linalg.det(A)
         if det < 0.1**5:
-            logging.warning('Nearly singular system :: det(A) = %.5e', det)
+            self.logger.warning('Nearly singular system :: det(A) = %.5e', det)
+        self.logger.setLevel(curlev)
         return A
 
-    # def dump_pnl(self, path):
-    #     """
-    #     Dump a matrix with approximate stationary distribution
-    #     """
-    #     try:
-    #         _ = self.pnl.shape
-    #     except AttributeError:
-    #         print('Attempting to dump Pnl but it is not computed yet')
-    #     else:
-    #         self._pnl.dump(path)
+    def dump_mtrx(self, path, rho, q):
+        """
+        Dump a matrix with approximate stationary distribution
+        """
+        mtrx = self._mtrx.get((rho, q))
+        if mtrx is None:
+            self.logger.error('The matrix is not computed yet, cannot dump')
+        else:
+            mtrx.dump(path)
+
+    def load_mtrx(self, path, rho, q):
+        """
+        Load a matrix with approximate stationary distribution
+        """
+        # check if path exists
+        try:
+            loaded = np.load(path)
+        except FileNotFoundError:
+            print('The file path does not exist')
+        else:
+            self._mtrx[(rho, q)] = loaded
 
 
 class EdaD1Simulator(object):
@@ -275,7 +403,8 @@ class EdaD1Simulator(object):
         self.trj = -1 * np.ones((2, self.ttt + 1))
         ############################
         # This is for debug purposes
-        npr.seed(2018)
+        # npr.seed(2018)
+        npr.seed()
         ############################
         self.set_ipos(0, 0)
         if type(warmup) is int:
@@ -334,7 +463,7 @@ class EdaD1Simulator(object):
         # if not isSquare(mtrx):
         #     raise ValueError('Matrix must be square')
         try:
-            _ = self.pnl.shape[0]
+            self.pnl.shape[0]
         except AttributeError:
             self._pnl = mtrx
         else:
@@ -404,7 +533,7 @@ class EdaD1Simulator(object):
         Dump a matrix with occupation frequencies in the quarter plane
         """
         try:
-            _ = self.pnl.shape
+            self.pnl.shape
         except AttributeError:
             print('Attempting to dump Pnl but it is not created yet')
         else:

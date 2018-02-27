@@ -61,14 +61,14 @@ def maxtriangno(k):
         """
         Return \max\{j \geq 0 such that {j+1 \choose 2} \leq k\}
         """
-        return np.floor(.5 * (-1.0 + np.sqrt(1.0 + 8.0 * k)))
+        return int(np.floor(.5 * (-1.0 + np.sqrt(1.0 + 8.0 * k))))
 
 
 def kct(k):
         """
         Return {k+1 \choose 2}
         """
-        return k * (k + 1) / 2
+        return k * (k + 1) // 2
 
 
 def indextonl(k):
